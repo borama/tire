@@ -57,7 +57,11 @@ module Tire
             records =  @options[:load] === true ? klass.find(ids) : klass.find(ids, @options[:load])
 
             # Reorder records to preserve order from search results
-            ids.map { |id| records.detect { |record| record.id.to_s == id.to_s } }
+            ordered_records = ids.map { |id| records.detect { |record| record.id.to_s == id.to_s } }
+
+            # Inject score values
+            scores = @response['hits']['hits'].inject({}) { |scores, h| scores[h['_id'].to_s] = h['_score']; scores }
+            ordered_records.each { |record| record.search_score = scores[record.id.to_s] if record.respond_to?(:search_score=) }
           end
         end
       end
